@@ -1,0 +1,36 @@
+name: Fork Auto Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Get the changes from upstream
+        run: |
+          git config --global user.name 'brc-dd'
+          git config --global user.email '40380293+brc-dd@users.noreply.github.com'
+          git pull --unshallow --ff-only
+          git remote add upstream https://github.com/Vibrant-Colors/node-vibrant
+          git fetch upstream
+          git rebase upstream/master
+
+      - name: Build the library
+        run: |
+          yarn && yarn build:node
+          git add -f ./lib/
+          git commit -am 'Build the library' || :
+
+      - name: Push changes to origin
+        run: git push -f origin master
